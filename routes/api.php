@@ -8,5 +8,5 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::post('/scan/ingest', [ScanController::class, 'ingest']);
+Route::post('/scan/ingest', [ScanController::class, 'ingest'])->middleware('throttle:60,1');;
 Route::get('/stats', [ScanController::class, 'stats']);
