@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ScanEvent;
 use App\Models\Alert;
+use App\Models\DailyStat;
 
 class ScanService
 {
@@ -16,11 +17,26 @@ class ScanService
         $isDuplicate = ScanEvent::where('scan_id', $scanId)->exists();
 
         if ($isDuplicate) {
+            // alert
             Alert::create([
                 'scan_id' => $scanId,
                 'type' => 'duplicate',
                 'message' => 'Duplicate scan detected'
             ]);
+
+            // stats update (duplicate)
+            $date = now()->toDateString();
+
+            $stats = DailyStat::firstOrCreate(
+                ['date' => $date],
+                [
+                    'total_scans' => 0,
+                    'total_duplicates' => 0,
+                    'total_invalid' => 0
+                ]
+            );
+
+            $stats->increment('total_duplicates');
 
             return [
                 'success' => false,
@@ -41,7 +57,7 @@ class ScanService
 
         $isInvalid = false;
 
-        // Step 3: action validation : receive -> dispatch -> verify
+        // Step 3: action validation
         if (!$lastScanEvent) {
             if ($currentAction !== 'receive') {
                 $isInvalid = true;
@@ -68,6 +84,25 @@ class ScanService
         // Step 5: save
         $scan = ScanEvent::create($payload);
 
+        // Step 6: stats update
+        $date = now()->toDateString();
+
+        $stats = DailyStat::firstOrCreate(
+            ['date' => $date],
+            [
+                'total_scans' => 0,
+                'total_duplicates' => 0,
+                'total_invalid' => 0
+            ]
+        );
+
+        $stats->increment('total_scans');
+
+        if ($isInvalid) {
+            $stats->increment('total_invalid');
+        }
+
+        // Step 7: response
         $message = 'Scan stored successfully';
         $errors = null;
         $status = 201;
