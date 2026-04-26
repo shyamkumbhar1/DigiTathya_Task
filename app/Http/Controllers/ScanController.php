@@ -12,7 +12,12 @@ class ScanController extends Controller
     public function ingest(Request $request , ScanService $scanService)
     {
         $result = $scanService->process($request);
-
-        return response()->json($result, 200);
+        return $this->apiResponse(
+            $result['success'] ?? false,
+            $result['message'] ?? 'Unexpected response',
+            $result['data'] ?? null,
+            $result['errors'] ?? null,
+            $result['status'] ?? 200
+        );
     }
 }

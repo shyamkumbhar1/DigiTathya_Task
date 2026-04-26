@@ -21,7 +21,13 @@ class ScanService
 
             return [
                 'success' => false,
-                'message' => 'Duplicate scan detected'
+                'message' => 'Duplicate scan detected',
+                'data' => null,
+                'errors' => [
+                    'code' => 'DUPLICATE_SCAN',
+                    'details' => [],
+                ],
+                'status' => 409,
             ];
         }
 
@@ -60,10 +66,25 @@ class ScanService
         // Step 5: save
         $scan = ScanEvent::create($request->all());
 
+        $message = 'Scan stored successfully';
+        $errors = null;
+        $status = 201;
+
+        if ($isInvalid) {
+            $message = 'Scan stored with invalid action warning';
+            $errors = [
+                'code' => 'INVALID_ACTION_SEQUENCE',
+                'details' => [],
+            ];
+            $status = 202;
+        }
+
         return [
             'success' => true,
-            'message' => 'Scan stored successfully',
-            'data' => $scan
+            'message' => $message,
+            'data' => $scan,
+            'errors' => $errors,
+            'status' => $status,
         ];
     }
 }

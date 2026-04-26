@@ -17,13 +17,16 @@ class StatsController extends Controller
 
     $totalInvalid = Alert::where('type', 'invalid_action')->count();
 
-    return response()->json([
-        'success' => true,
-        'data' => [
+    return $this->apiResponse(
+        true,
+        'Stats fetched successfully',
+        [
             'total_scans' => $totalScans,
             'total_duplicates' => $totalDuplicates,
-            'total_invalid' => $totalInvalid
-        ]
-    ]);
+            'total_invalid' => $totalInvalid,
+        ],
+        null,
+        200
+    );
 }
 }
