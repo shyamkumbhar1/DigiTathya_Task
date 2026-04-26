@@ -30,7 +30,12 @@ class ScanService
                 'Duplicate scan detected',
                 'DUPLICATE_SCAN',
                 409,
-                $this->buildStatsPayload(0, 1, 0)
+                $this->buildStatsPayload(0, 1, 0),
+                [
+                    'scan_id' => $scanId,
+                    'current_action' => $currentAction,
+                    'last_action' => $currentAction,
+                ]
             );
         }
 
@@ -42,7 +47,12 @@ class ScanService
                 'Invalid action sequence',
                 'INVALID_SEQUENCE',
                 422,
-                $this->buildStatsPayload(0, 0, 1)
+                $this->buildStatsPayload(0, 0, 1),
+                [
+                    'scan_id' => $scanId,
+                    'current_action' => $currentAction,
+                    'last_action' => $lastScanEvent?->action,
+                ]
             );
         }
 
@@ -88,7 +98,13 @@ class ScanService
         ];
     }
 
-    private function errorResponse(string $message, string $code, int $status, array $stats): array
+    private function errorResponse(
+        string $message,
+        string $code,
+        int $status,
+        array $stats,
+        array $details = []
+    ): array
     {
         return [
             'success' => false,
@@ -96,7 +112,7 @@ class ScanService
             'data' => null,
             'errors' => [
                 'code' => $code,
-                'details' => [],
+                'details' => $details,
             ],
             'status' => $status,
             'stats' => $stats,
