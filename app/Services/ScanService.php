@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Repositories\AlertRepository;
 use App\Repositories\ScanRepository;
+use Carbon\Carbon;
 
 class ScanService
 {
@@ -54,6 +55,10 @@ class ScanService
                     'last_action' => $lastScanEvent?->action,
                 ]
             );
+        }
+
+        if (!empty($payload['device_timestamp'])) {
+            $payload['device_timestamp'] = Carbon::parse($payload['device_timestamp'])->format('Y-m-d H:i:s');
         }
 
         $scan = $this->scanRepository->create($payload);

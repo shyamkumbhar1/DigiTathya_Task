@@ -6,9 +6,11 @@ export const options = {
   duration: '30s',
 };
 
+const RUN_ID = Date.now();
+
 export default function () {
   const payload = JSON.stringify({
-    scan_id: `scan_${__VU}_${__ITER}`,
+    scan_id: `scan_${RUN_ID}_${__VU}_${__ITER}`,
     session_id: 'sess_1',
     operator_id: 'op_1',
     partner_id: 'p1',
