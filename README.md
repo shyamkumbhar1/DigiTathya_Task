@@ -48,7 +48,8 @@ Business rule validation and runtime corrections were manually reviewed and adju
 
 ## 13) Next Improvements
 Add status tracking endpoint for queued processing visibility.  
-Add automated feature tests for core scenarios.Add load-test tuning based on k6 results (worker scaling, DB/index optimization).
+Add automated feature tests for core scenarios.
+Add load-test tuning based on k6 results (worker scaling, DB/index optimization).
 
 ## 14) Production Hardening
 Add stronger observability and request correlation IDs.  
