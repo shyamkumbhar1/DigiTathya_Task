@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\ScanEvent;
 use App\Models\Alert;   
+use App\Models\ScanEvent;
+use App\Support\ApiResponse;
 
 
 class StatsController extends Controller
@@ -17,15 +17,15 @@ class StatsController extends Controller
 
     $totalInvalid = Alert::where('type', 'invalid_action')->count();
 
-    return $this->apiResponse(
-        true,
-        'Stats fetched successfully',
-        [
-            'total_scans' => $totalScans,
-            'total_duplicates' => $totalDuplicates,
-            'total_invalid' => $totalInvalid,
-        ],
-        null,
+    return response()->json(
+        ApiResponse::success(
+            'Stats fetched successfully',
+            [
+                'total_scans' => $totalScans,
+                'total_duplicates' => $totalDuplicates,
+                'total_invalid' => $totalInvalid,
+            ]
+        ),
         200
     );
 }

@@ -2,15 +2,13 @@
 
 namespace App\Http\Requests;
 
-use App\Traits\ApiResponseTrait;
+use App\Support\ApiResponse;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
 class ScanIngestRequest extends FormRequest
 {
-    use ApiResponseTrait;
-
     public function authorize(): bool
     {
         return true;
@@ -34,14 +32,10 @@ class ScanIngestRequest extends FormRequest
     protected function failedValidation(Validator $validator): void
     {
         throw new HttpResponseException(response()->json(
-            $this->formatResponse(
-                false,
+            ApiResponse::error(
                 'Validation failed',
-                null,
-                [
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => $validator->errors(),
-                ]
+                'VALIDATION_ERROR',
+                $validator->errors()->toArray()
             ),
             422
         ));
