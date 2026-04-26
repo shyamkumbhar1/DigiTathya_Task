@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use App\Models\DailyStat;
+use App\Repositories\DailyStatRepository;
 use Illuminate\Support\Facades\Log;
 class ProcessScanJob implements ShouldQueue
 {
@@ -28,19 +28,12 @@ class ProcessScanJob implements ShouldQueue
     public function handle(): void
     {
         $date = $this->statsPayload['date'] ?? now()->toDateString();
-
-        $stats = DailyStat::firstOrCreate(
-            ['date' => $date],
-            [
-                'total_scans' => 0,
-                'total_duplicates' => 0,
-                'total_invalid' => 0,
-            ]
+        app(DailyStatRepository::class)->incrementByDate(
+            $date,
+            $this->statsPayload['total_scans'] ?? 0,
+            $this->statsPayload['total_duplicates'] ?? 0,
+            $this->statsPayload['total_invalid'] ?? 0
         );
-
-        $stats->increment('total_scans', $this->statsPayload['total_scans'] ?? 0);
-        $stats->increment('total_duplicates', $this->statsPayload['total_duplicates'] ?? 0);
-        $stats->increment('total_invalid', $this->statsPayload['total_invalid'] ?? 0);
     }
 
     public function failed(\Throwable $e): void

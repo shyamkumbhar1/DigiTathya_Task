@@ -2,121 +2,104 @@
 
 namespace App\Services;
 
-use App\Models\ScanEvent;
-use App\Models\Alert;
-use Illuminate\Support\Facades\Log;
+use App\Repositories\AlertRepository;
+use App\Repositories\ScanRepository;
 
 class ScanService
 {
+    private const ACTION_TRANSITIONS = [
+        'receive' => 'dispatch',
+        'dispatch' => 'verify',
+        'verify' => 'return',
+    ];
+
+    public function __construct(
+        private readonly ScanRepository $scanRepository,
+        private readonly AlertRepository $alertRepository
+    ) {
+    }
+
     public function process(array $payload)
     {
         $scanId = $payload['scan_id'];
         $currentAction = $payload['action'];
 
-        // Step 1: duplicate check
-        $isDuplicate = ScanEvent::where('scan_id', $scanId)->exists();
-
-        if ($isDuplicate) {
-            Log::warning('Duplicate scan detected', [
-                'scan_id' => $scanId,
-            ]);
-
-            // alert
-            Alert::create([
-                'scan_id' => $scanId,
-                'type' => 'duplicate',
-                'message' => 'Duplicate scan detected'
-            ]);
-
-            return [
-                'success' => false,
-                'message' => 'Duplicate scan detected',
-                'data' => null,
-                'errors' => [
-                    'code' => 'DUPLICATE_SCAN',
-                    'details' => [],
-                ],
-                'status' => 409,
-                'stats' => [
-                    'date' => now()->toDateString(),
-                    'total_scans' => 0,
-                    'total_duplicates' => 1,
-                    'total_invalid' => 0,
-                ],
-            ];
+        if ($this->scanRepository->existsByScanIdAndAction($scanId, $currentAction)) {
+            $this->alertRepository->createDuplicateAlert($scanId);
+            return $this->errorResponse(
+                'Duplicate scan detected',
+                'DUPLICATE_SCAN',
+                409,
+                $this->buildStatsPayload(0, 1, 0)
+            );
         }
 
-        // Step 2: last scan event
-        $lastScanEvent = ScanEvent::where('scan_id', $scanId)
-            ->latest()
-            ->first();
+        $lastScanEvent = $this->scanRepository->findLastByScanId($scanId);
 
-        $isInvalid = false;
-
-        // Step 3: action validation
-        if (!$lastScanEvent) {
-            if ($currentAction !== 'receive') {
-                $isInvalid = true;
-            }
-        } else {
-            if ($lastScanEvent->action == 'receive' && $currentAction !== 'dispatch') {
-                $isInvalid = true;
-            }
-
-            if ($lastScanEvent->action == 'dispatch' && $currentAction !== 'verify') {
-                $isInvalid = true;
-            }
-            if ($lastScanEvent->action == 'verify' && $currentAction !== 'return') {
-                $isInvalid = true;
-            }
+        if ($this->isInvalidSequence($lastScanEvent?->action, $currentAction)) {
+            $this->alertRepository->createInvalidActionAlert($scanId);
+            return $this->errorResponse(
+                'Invalid action sequence',
+                'INVALID_SEQUENCE',
+                422,
+                $this->buildStatsPayload(0, 0, 1)
+            );
         }
 
-        // Step 4: invalid alert
-        if ($isInvalid) {
-            Log::warning('Invalid action sequence detected', [
-                'scan_id' => $scanId,
-                'action' => $currentAction,
-                'last_action' => $lastScanEvent?->action,
-            ]);
+        $scan = $this->scanRepository->create($payload);
+        return $this->successResponse(
+            'Scan stored successfully',
+            $scan,
+            201,
+            $this->buildStatsPayload(1, 0, 0)
+        );
+    }
 
-            Alert::create([
-                'scan_id' => $scanId,
-                'type' => 'invalid_action',
-                'message' => 'Invalid action sequence'
-            ]);
+    private function isInvalidSequence(?string $lastAction, string $currentAction): bool
+    {
+        if (!$lastAction) {
+            return $currentAction !== 'receive';
         }
 
-        // Step 5: save
-        $scan = ScanEvent::create($payload);
+        $expectedNextAction = self::ACTION_TRANSITIONS[$lastAction] ?? null;
 
-        // Step 6: response
-        $message = 'Scan stored successfully';
-        $errors = null;
-        $status = 201;
-        $statsPayload = [
+        return $expectedNextAction !== $currentAction;
+    }
+
+    private function buildStatsPayload(int $totalScans, int $totalDuplicates, int $totalInvalid): array
+    {
+        return [
             'date' => now()->toDateString(),
-            'total_scans' => 1,
-            'total_duplicates' => 0,
-            'total_invalid' => 0,
+            'total_scans' => $totalScans,
+            'total_duplicates' => $totalDuplicates,
+            'total_invalid' => $totalInvalid,
         ];
+    }
 
-        if ($isInvalid) {
-            $message = 'Scan stored with invalid action warning';
-            $errors = [
-                'code' => 'INVALID_ACTION_SEQUENCE',
-                'details' => [],
-            ];
-            $status = 202;
-            $statsPayload['total_invalid'] = 1;
-        }
-
+    private function successResponse(string $message, $data, int $status, array $stats): array
+    {
         return [
             'success' => true,
             'message' => $message,
-            'data' => $scan,
-            'errors' => $errors,
+            'data' => $data,
+            'errors' => null,
             'status' => $status,
-            'stats' => $statsPayload,
+            'stats' => $stats,
+        ];
+    }
+
+    private function errorResponse(string $message, string $code, int $status, array $stats): array
+    {
+        return [
+            'success' => false,
+            'message' => $message,
+            'data' => null,
+            'errors' => [
+                'code' => $code,
+                'details' => [],
+            ],
+            'status' => $status,
+            'stats' => $stats,
         ];
     }
 }
