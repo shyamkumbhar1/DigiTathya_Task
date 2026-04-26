@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ScanEvent;
 use App\Models\Alert;
 use App\Models\DailyStat;
+use Illuminate\Support\Facades\Log;
 
 class ScanService
 {
@@ -17,6 +18,10 @@ class ScanService
         $isDuplicate = ScanEvent::where('scan_id', $scanId)->exists();
 
         if ($isDuplicate) {
+            Log::warning('Duplicate scan detected', [
+                'scan_id' => $scanId,
+            ]);
+
             // alert
             Alert::create([
                 'scan_id' => $scanId,
@@ -74,6 +79,12 @@ class ScanService
 
         // Step 4: invalid alert
         if ($isInvalid) {
+            Log::warning('Invalid action sequence detected', [
+                'scan_id' => $scanId,
+                'action' => $currentAction,
+                'last_action' => $lastScanEvent?->action,
+            ]);
+
             Alert::create([
                 'scan_id' => $scanId,
                 'type' => 'invalid_action',

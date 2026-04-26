@@ -20,6 +20,7 @@ class ScanController extends Controller
         } catch (\Throwable $e) {
             Log::error('Scan ingest failed', [
                 'error' => $e->getMessage(),
+                'scan_id' => $request->input('scan_id'),
             ]);
             $details = config('app.debug')
                 ? ['message' => $e->getMessage()]
