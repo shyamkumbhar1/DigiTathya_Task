@@ -2,16 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\ScanEvent;
-use App\Models\Alert;
+use App\Http\Requests\ScanIngestRequest;
 use App\Services\ScanService;
 
 class ScanController extends Controller
 {
-    public function ingest(Request $request , ScanService $scanService)
+    public function ingest(ScanIngestRequest $request, ScanService $scanService)
     {
-        $result = $scanService->process($request);
+        $result = $scanService->process($request->validated());
         return $this->apiResponse(
             $result['success'] ?? false,
             $result['message'] ?? 'Unexpected response',

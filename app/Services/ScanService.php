@@ -7,14 +7,17 @@ use App\Models\Alert;
 
 class ScanService
 {
-    public function process($request)
+    public function process(array $payload)
     {
+        $scanId = $payload['scan_id'];
+        $currentAction = $payload['action'];
+
         // Step 1: duplicate check
-        $isDuplicate = ScanEvent::where('scan_id', $request->scan_id)->exists();
+        $isDuplicate = ScanEvent::where('scan_id', $scanId)->exists();
 
         if ($isDuplicate) {
             Alert::create([
-                'scan_id' => $request->scan_id,
+                'scan_id' => $scanId,
                 'type' => 'duplicate',
                 'message' => 'Duplicate scan detected'
             ]);
@@ -32,11 +35,10 @@ class ScanService
         }
 
         // Step 2: last scan event
-        $lastScanEvent = ScanEvent::where('scan_id', $request->scan_id)
+        $lastScanEvent = ScanEvent::where('scan_id', $scanId)
             ->latest()
             ->first();
 
-        $currentAction = $request->action;
         $isInvalid = false;
 
         // Step 3: action validation : receive -> dispatch -> verify
@@ -57,14 +59,14 @@ class ScanService
         // Step 4: invalid alert
         if ($isInvalid) {
             Alert::create([
-                'scan_id' => $request->scan_id,
+                'scan_id' => $scanId,
                 'type' => 'invalid_action',
                 'message' => 'Invalid action sequence'
             ]);
         }
 
         // Step 5: save
-        $scan = ScanEvent::create($request->all());
+        $scan = ScanEvent::create($payload);
 
         $message = 'Scan stored successfully';
         $errors = null;
