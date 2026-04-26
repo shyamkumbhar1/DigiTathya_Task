@@ -14,6 +14,8 @@ class ProcessScanJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $payload;
+    protected $tries = 3;
+    public $timeout = 30; 
     public function __construct(array $payload)
     {
         $this->payload = $payload;

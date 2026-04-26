@@ -75,6 +75,9 @@ class ScanService
             if ($lastScanEvent->action == 'dispatch' && $currentAction !== 'verify') {
                 $isInvalid = true;
             }
+            if ($lastScanEvent->action == 'verify' && $currentAction !== 'return') {
+                $isInvalid = true;
+            }
         }
 
         // Step 4: invalid alert

@@ -17,6 +17,8 @@ class ScanEvent extends Model
         'action',
         'gps_lat',
         'gps_lng',
-        'device_timestamp'
+        'device_timestamp',
+        'gps_accuracy',
+        'app_version'
     ];
 }
