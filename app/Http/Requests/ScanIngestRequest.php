@@ -22,7 +22,7 @@ class ScanIngestRequest extends FormRequest
             'operator_id' => ['nullable', 'string', 'max:255'],
             'partner_id' => ['nullable', 'string', 'max:255'],
             'device_id' => ['nullable', 'string', 'max:255'],
-            'action' => ['required', 'in:receive,dispatch,verify','return'],
+            'action' => ['required', 'in:receive,dispatch,verify,return'],
             'gps_lat' => ['nullable', 'numeric', 'between:-90,90'],
             'gps_lng' => ['nullable', 'numeric', 'between:-180,180'],
             'device_timestamp' => ['nullable', 'date'],

@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\ScanEvent;
 use App\Models\Alert;
-use App\Models\DailyStat;
 use Illuminate\Support\Facades\Log;
 
 class ScanService
@@ -29,20 +28,6 @@ class ScanService
                 'message' => 'Duplicate scan detected'
             ]);
 
-            // stats update (duplicate)
-            $date = now()->toDateString();
-
-            $stats = DailyStat::firstOrCreate(
-                ['date' => $date],
-                [
-                    'total_scans' => 0,
-                    'total_duplicates' => 0,
-                    'total_invalid' => 0
-                ]
-            );
-
-            $stats->increment('total_duplicates');
-
             return [
                 'success' => false,
                 'message' => 'Duplicate scan detected',
@@ -52,6 +37,12 @@ class ScanService
                     'details' => [],
                 ],
                 'status' => 409,
+                'stats' => [
+                    'date' => now()->toDateString(),
+                    'total_scans' => 0,
+                    'total_duplicates' => 1,
+                    'total_invalid' => 0,
+                ],
             ];
         }
 
@@ -98,28 +89,16 @@ class ScanService
         // Step 5: save
         $scan = ScanEvent::create($payload);
 
-        // Step 6: stats update
-        $date = now()->toDateString();
-
-        $stats = DailyStat::firstOrCreate(
-            ['date' => $date],
-            [
-                'total_scans' => 0,
-                'total_duplicates' => 0,
-                'total_invalid' => 0
-            ]
-        );
-
-        $stats->increment('total_scans');
-
-        if ($isInvalid) {
-            $stats->increment('total_invalid');
-        }
-
-        // Step 7: response
+        // Step 6: response
         $message = 'Scan stored successfully';
         $errors = null;
         $status = 201;
+        $statsPayload = [
+            'date' => now()->toDateString(),
+            'total_scans' => 1,
+            'total_duplicates' => 0,
+            'total_invalid' => 0,
+        ];
 
         if ($isInvalid) {
             $message = 'Scan stored with invalid action warning';
@@ -128,6 +107,7 @@ class ScanService
                 'details' => [],
             ];
             $status = 202;
+            $statsPayload['total_invalid'] = 1;
         }
 
         return [
@@ -136,6 +116,7 @@ class ScanService
             'data' => $scan,
             'errors' => $errors,
             'status' => $status,
+            'stats' => $statsPayload,
         ];
     }
 }
