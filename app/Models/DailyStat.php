@@ -8,4 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class DailyStat extends Model
 {
     use HasFactory;
+    protected $fillable = [
+        'date',
+        'total_scans',
+        'total_duplicates',
+        'total_invalid'
+    ];
 }
